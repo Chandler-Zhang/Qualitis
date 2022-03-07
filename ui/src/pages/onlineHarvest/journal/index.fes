@@ -1,0 +1,167 @@
+
+<template>
+  <pageContainer>
+    <div class="all-wrapper">
+      <Row class="operate">
+        <div class="breadcrumb-container mb10">
+          <span class="breadcrumb-item-link" @click="handleRouter('/onlineHarvest')">{{
+            $t("onlineData.OnlineHarvesting")
+          }}</span>
+          <span class="breadcrumb-item-separator">/</span>
+          <span class="breadcrumb-item-link">运行日志</span>
+        </div>
+      </Row>
+      <Row>
+        <Cell span="24" class="p21">
+          <Wb-table :data="journalTable" border>
+            <Column prop="dataImportTaskName" name="任务名称" />
+            <Column prop="appId" name="appId" />
+            <Column prop="sourceType" name="数据来源" />
+            <Column prop="statusText" name="状态" :classes="statuStyle"/>
+            <Column prop="startDate" name="开始时间" />
+            <Column prop="endDate" name="结束时间" />
+          </Wb-table>
+          <Pagination
+            class="pt20"
+            :size-list="sizeList"
+            :current="params.page"
+            :size="params.size"
+            :total="params.total"
+            @on-change="changePage"
+          />
+        </Cell>
+      </Row>
+      <Loading v-show="showLoading" class="loading-layout" />
+    </div>
+  </pageContainer>
+</template>
+<script>
+import pageContainer from "../../../components/template";
+import { sizeList, url } from "assets/js/sizeList";
+export default {
+  FesHeader: true,
+  FesLeft: false,
+  FesReady: function () {
+    // this.dataImportTaskId = this.$route.query.id
+    this.dataImportTaskId = window.localStorage.getItem("journalId");
+    this.getData();
+  },
+  components: {
+    pageContainer,
+  },
+  data() {
+    return {
+      showLoading: true,
+      pagination: {
+        page: 1,
+        size: 15,
+        total: 0,
+      },
+      sizeList,
+      url,
+      journalTable: [],
+      params: {
+        page: 1,
+        size: 10,
+        total: 0,
+      },
+      dataImportTaskId: "",
+      timer:null,//定时器
+    };
+  },
+  computed: {},
+  methods: {
+    getData() {
+      let _this = this;
+      let http = new XMLHttpRequest();
+      let params = `page=${this.params.page}&limit=${this.params.size}&dataImportTaskName&status&dataImportTaskId=${this.dataImportTaskId}&sourceType`;
+      http.open(
+        "get",
+        `${this.url}/data-import/record/getPageBySearch?${params}`,
+        true
+      );
+      http.setRequestHeader("Content-Type", "application/json; charset=UTF-8");
+      http.send();
+      http.onload = function () {
+       let data = JSON.parse(http.response).data.data;
+       if(data.length>0){
+            _this.journalTable = data.map(item=>{
+                switch(item.status){
+                    case "running":
+                    item.statusText = "运行中";
+                    break;
+                    case "done":
+                    item.statusText = "已完成";
+                    break;
+                    default:
+                    item.statusText = "已完成";
+                    break;
+                }
+                return item;
+            })
+        }
+        _this.showLoading = false;
+      };
+    },
+    changePage({ current, size }) {
+      this.params.page = current;
+      this.params.size = size;
+      this.getData();
+    },
+    //根据状态获取不同的状态
+    statuStyle(data){
+       if(data.status === "done"){
+             return "success"
+       }else{
+           return "running"
+       }
+    },
+      handleRouter(val) {
+      this.FesApp.router.push(val);
+    },
+  },
+  mounted() {
+    //每过两秒获取最新日志
+    this.timer = setInterval(() => {
+      this.getData();
+    }, 3000);
+  },
+  destroyed(){
+       clearInterval(this.timer);
+  }
+};
+</script>
+<style scoped>
+.labelItem {
+  height: 60px;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  font-size: 14px;
+}
+.ruleDetList .ui-modal-dialog .ui-modal-body {
+  width: 1200px !important;
+}
+
+.ruleDetList td {
+  white-space: pre;
+}
+
+.mydatatable .label {
+  display: inline-block;
+  text-align: right;
+  padding-right: 8px;
+  height: 30px;
+  min-width: 140px;
+  line-height: 30px;
+  font-size: 14px;
+}
+.operate {
+  margin: 20px 20px 0px;
+}
+.flex-end {
+  display: flex;
+  justify-content: flex-end;
+}
+
+</style>

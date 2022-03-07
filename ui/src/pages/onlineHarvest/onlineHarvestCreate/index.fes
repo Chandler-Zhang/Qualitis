@@ -1,0 +1,381 @@
+<!--
+ * @Author: youdedong
+ * @Date: 2022-02-09 15:43:06
+ * @Description:   onlineHarvestCreate
+-->
+<template>
+  <pageContainer>
+    <div class="all-wrapper">
+      <Row class="operate">
+        <div class="breadcrumb-container mb10">
+          <span class="breadcrumb" @click="handleRouter('/onlineHarvest')">{{
+            $t("onlineData.OnlineHarvesting")
+          }}</span>
+          <span class="breadcrumb-item-separator">/</span>
+          <span class="breadcrumb-item-link">{{
+            $t("onlineData.NewOnlineHarvesting")
+          }}</span>
+        </div>
+      </Row>
+      <Row class="operate">
+        <Panel title="导入任务配置">
+          <Wb-button icon="md-arrow-round-back" slot="action"></Wb-button>
+          <Wb-form label-position="left" :label-width="100">
+            <Row>
+              <Cell span="10">
+                <Form-item label="导入名称">
+                  <wb-input
+                    :placeholder="$t('onlineData.Select')"
+                    v-model="params.dataImportTaskName"
+                  ></wb-input>
+                </Form-item>
+              </Cell>
+              <Cell span="10" style="margin-left: 40px">
+                <Form-item label="jdbcUrl">
+                  <wb-input
+                    :placeholder="$t('onlineData.Select')"
+                    v-model="params.jdbcUrl"
+                  ></wb-input>
+                </Form-item>
+              </Cell>
+            </Row>
+            <Row>
+              <Cell span="10">
+                <Form-item label="username">
+                  <wb-input
+                    :placeholder="$t('onlineData.Select')"
+                    v-model="params.username"
+                  ></wb-input>
+                </Form-item>
+              </Cell>
+              <Cell span="10" style="margin-left: 40px">
+                <Form-item label="password">
+                  <wb-input
+                    :placeholder="$t('onlineData.Select')"
+                    v-model="params.password"
+                  ></wb-input>
+                </Form-item>
+              </Cell>
+            </Row>
+            <Row>
+              <Cell span="10">
+                <Form-item :label="$t('onlineData.DataSourceName')">
+                  <wb-input
+                    :placeholder="$t('onlineData.Select')"
+                    v-model="params.name"
+                  ></wb-input>
+                </Form-item>
+              </Cell>
+
+              <Cell span="2" style="margin-left: 40px">
+                <Wb-button type="primary" @click="getAllTables">确定</Wb-button>
+              </Cell>
+            </Row>
+          </Wb-form>
+        </Panel>
+      </Row>
+      <Row class="operate" v-if="AllTables.length > 0">
+        <Panel title="">
+          <Wb-button icon="md-arrow-round-back" slot="action"></Wb-button>
+          <Wb-form label-position="left" :label-width="100">
+            <Row>
+              <Cell span="24" style="height: 600px; overflow-y: auto">
+                <Wb-table
+                  :data="AllTables"
+                  @on-select="sysout"
+                  @on-select-all="sysout"
+                >
+                  <Column type="selection" width="20px"></Column>
+                  <Column
+                    width="40px"
+                    prop="index"
+                    :name="$t('onlineData.serialNumber')"
+                  ></Column>
+                  <Column
+                    width="20%"
+                    prop="name"
+                    :name="$t('onlineData.dataTable')"
+                  ></Column>
+                  <Column
+                    width="20%"
+                    prop="newname"
+                    :name="$t('onlineData.newTableName')"
+                    :editable="editNewNameConfig"
+                  >
+                  </Column>
+                  <Column
+                    width="20%"
+                    prop="totalCount"
+                    :name="$t('onlineData.totalCount')"
+                  ></Column>
+                  <Column name="操作" :action="action"  width="20%"></Column>
+                </Wb-table>
+              </Cell>
+            </Row>
+          </Wb-form>
+        </Panel>
+      </Row>
+      <Row class="operate" v-if="AllTables.length > 0">
+        <Cell span="24" style="display: flex; justify-content: center">
+          <Wb-button type="primary" @click="handleestablish">{{
+            $t("onlineData.preservation")
+          }}</Wb-button>
+        </Cell>
+      </Row>
+      <Loading v-show="showLoading" class="loading-layout" />
+    </div>
+  </pageContainer>
+</template>
+<script>
+import pageContainer from "../../../components/template";
+import { sizeList, url } from "assets/js/sizeList";
+export default {
+  FesHeader: true,
+  FesLeft: false,
+  FesReady: function () {},
+  components: {
+    pageContainer,
+  },
+  data() {
+    return {
+      selectArr: [],
+      params: {
+        name: "",
+        jdbcUrl: "jdbc:mysql://127.0.0.1:3306/{dataBaseName}",
+        username: "root",
+        password: "xxx",
+        dataImportTaskName: "",
+      },
+      AllTables: [],
+      showLoading: false,
+      editNewNameConfig: {
+        change: this.changeName,
+      },
+      url: url,
+      action: [
+        {
+          text: "查看数据量",
+          func: function (data) {
+            this.searchCount(data)
+          },
+        },
+      ],
+    };
+  },
+  computed: {},
+  methods: {
+    /**
+     * @Author: youdedong
+     * @description: 跳转到导入数据
+     * @Date: 2022-02-09 16:44:16
+     */
+    handleRouter(val) {
+      this.FesApp.router.push(val);
+    },
+
+    /**
+     * @Author: youdedong
+     * @description: 获取数据表
+     * @Date: 2022-02-11 16:25:24
+     */
+    getAllTables() {
+      let _this = this;
+      let params = {
+        jdbcUrl: this.params.jdbcUrl,
+        userName: this.params.username,
+        password: this.params.password,
+      };
+      let http = new XMLHttpRequest();
+      http.open("post", this.url + "/dataImportJDBC/getAllTables", true);
+      http.setRequestHeader(
+        "Content-Type",
+        "application/x-www-form-urlencoded;"
+      );
+      http.send(
+        `jdbcUrl=${params.jdbcUrl}&userName=${params.userName}&password=${params.password}`
+      );
+      http.onload = function () {
+        let res = JSON.parse(http.response);
+        if (res.code == 200) {
+          _this.AllTables = [];
+          JSON.parse(http.response).data.tables.forEach((item, index) => {
+            _this.AllTables.push({
+              name: item,
+              newname: item,
+              index: index + 1,
+              totalCount: 0,
+            });
+          });
+        } else {
+          _this.$Toast.error(res.msg);
+        }
+      };
+    },
+
+    /**
+     * @Author: youdedong
+     * @description: 保存按钮
+     * @Date: 2022-02-10 16:43:50
+     */
+    handleestablish() {
+      let _this = this;
+      if (this.selectArr.length > 0) {
+        let params = {
+          cron: "",
+          dataImportTaskId: "",
+          dataImportTaskName: this.params.dataImportTaskName,
+          dataSourceId: "",
+          id: 0,
+          jdbcUrl: this.params.jdbcUrl,
+          password: this.params.password,
+          pid: "",
+          projectId: "",
+          saveMode: "",
+          tables: [],
+          userName: this.params.username,
+          virtualTitle: "",
+          targetHiveDbName: this.params.name,
+        };
+        let arr = [];
+        //删除第一个异常数据
+        this.selectArr.splice(0, 1);
+        this.selectArr.forEach((item, index) => {
+          arr.push({
+            customTableName: item.newname,
+            dataCount: "",
+            hdfsPath: "",
+            importType: "1",
+            tableName: item.name,
+          });
+        });
+        params.tables = arr;
+        let http = new XMLHttpRequest();
+        http.open("post", this.url + "/dataImportJDBC/saveTaskInfo", true);
+        http.setRequestHeader(
+          "Content-Type",
+          "application/json; charset=UTF-8"
+        );
+        http.send(JSON.stringify(params));
+        http.onload = function () {
+          let res = JSON.parse(http.response);
+          if (res.code == 200) {
+            _this.$Toast.success(_this.$t("onlineData.SavedSuccessfully"));
+            _this.FesApp.router.push("/onlineHarvest");
+          } else {
+            _this.$Toast.error(res.msg);
+          }
+        };
+      } else {
+        _this.$Toast.error("请选择数据表！");
+      }
+    },
+
+    /**
+     * @Author: youdedong
+     * @description: 点击复选框
+     * @Date: 2022-02-11 16:32:31
+     * @param {*} val
+     * @param {*} val2
+     * @param {*} val3
+     * @param {*} val4
+     */
+    sysout(curData, index, isSelect) {
+      if (this.selectArr.length < 1) {
+        this.selectArr.push(curData);
+      } else {
+        this.selectArr.forEach((item, i) => {
+          if (item.name !== curData.name) {
+            this.selectArr.push(curData);
+          }
+        });
+      }
+      //对象数组去重
+      var obj = {};
+      this.selectArr = this.selectArr.reduce(function (item, next) {
+        obj[next.name] ? "" : (obj[next.name] = true && item.push(next));
+        return item;
+      }, []);
+    },
+    //修改新表名
+    changeName(oldName, newName, e, data) {
+      let index = data.index - 1;
+      let obj = {
+        index: data.index,
+        name: data.name,
+        newname: newName,
+      };
+      this.AllTables.splice(index, 1, obj);
+    },
+    //查询数据量
+    searchCount(data){
+           let _this = this;
+           let obj ={
+               jdbcUrl: this.params.jdbcUrl,
+               userName:this.params.username,
+               password:this.params.password,
+               tableName:data.name
+           }
+           let http = new XMLHttpRequest();
+           let url=`${this.url}/dataImportJDBC/getDataCounts`
+            http.open("post", url, true);
+            http.setRequestHeader(
+            "Content-Type",
+            "application/json; charset=UTF-8"
+            );
+            http.send(JSON.stringify(obj));
+            http.onload = function () {
+                let res = JSON.parse(http.response);
+                if (res.code == 200) {
+                   _this.AllTables =  _this.AllTables.map(item=>{
+                        if(item.index === data.index){
+                            return {
+                                    ...item,
+                                    totalCount:res.data.totalCount
+                            }
+                        }else{
+                            return item;
+                        }
+                    })
+
+                    _this.$Toast.success(_this.$t("common.reqSuccess"));
+                } else {
+                    _this.$Toast.error(res.msg);
+                }
+            };
+    }
+  },
+};
+</script>
+<style scoped>
+.labelItem {
+  height: 60px;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  font-size: 14px;
+}
+.ruleDetList .ui-modal-dialog .ui-modal-body {
+  width: 1200px !important;
+}
+
+.ruleDetList td {
+  white-space: pre;
+}
+
+.mydatatable .label {
+  display: inline-block;
+  text-align: right;
+  padding-right: 8px;
+  height: 30px;
+  min-width: 140px;
+  line-height: 30px;
+  font-size: 14px;
+}
+.operate {
+  margin: 20px 20px 0px;
+}
+.flex-end {
+  display: flex;
+  justify-content: flex-end;
+}
+</style>

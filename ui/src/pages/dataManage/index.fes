@@ -1,0 +1,311 @@
+<!--
+ * @Author: youdedong
+ * @Date: 2022-01-28 14:35:02
+ * @LastEditors: Please set LastEditors
+ * @LastEditTime: 2022-02-14 14:28:42
+ * @Description: 
+-->
+
+<template>
+  <pageContainer>
+    <div class="all-wrapper">
+      <Row class="operate">
+        <div class="breadcrumb-container mb10">
+          <span class="breadcrumb">{{ $t("onlineData.dataManage") }}</span>
+        </div>
+        <!-- <Cell span="4">
+          <div>{{ $t('common.dataSource') }}</div>
+          <Wb-select v-model="slectedCluster" filterable @on-change="filterCluster">
+            <wb-option v-for="(d,i) in clusterList" :key="i" :value="d">
+              {{ d }}</wb-option>
+          </Wb-select>
+        </Cell>
+        <Cell span="4" offset="1">
+          <div>{{ $t('common.database') }}</div>
+          <Wb-select v-model="dbName" filterable @on-change="filterDb">
+            <wb-option v-for="(d,k) in dbList" :key="k" :value="d.db_name">{{ d.db_name }}</wb-option>
+          </Wb-select>
+        </Cell>
+        <Cell span="4" offset="1">
+          <div>{{ $t('ruleQueryPage.dataTableName') }}</div>
+          <Wb-select v-model="tableName" filterable>
+            <wb-option v-for="(d,i) in tableList" :key="i" :value="d.table_name">{{ d.table_name }}</wb-option>
+          </Wb-select>
+        </Cell>
+        <Cell span="4" offset="1" style="margin-top: 12px;">
+          <Wb-button type="primary" @click="search">{{ $t('ruleQueryPage.search') }}</Wb-button>
+        </Cell> -->
+      </Row>
+
+      <Row>
+        <Cell span="5">
+          <Tree
+            :data="treeData"
+            :load-data="loadData"
+            @on-select-change="selectNode"
+            :inline="false"
+            class="custom_tree"
+          >
+            <template slot-scope="{node, root}">
+               <span v-tooltip="node.name" class="customText"> {{ node.name }} </span>
+            </template>
+            
+          </Tree>
+        </Cell>
+        <Cell span="19" class="p20" >
+          <Wb-table :data="projectList" border :no-data-text="$t('common.noData')" class="ml35 custom-table">
+              <Column :prop="item" :name="item" v-for="(item,i) in projectColumn" :key="i" width="200px" classes="block"/>
+          </Wb-table>
+        
+          <!-- <Pagination
+            class="pt20"
+            :size-list="sizeList"
+            :current="pagination.page"
+            :size="pagination.size"
+            :total="pagination.total"
+            @on-change="changePage"
+          /> -->
+        </Cell>
+      </Row>
+      <Loading v-show="showLoading" class="loading-layout" />
+    </div>
+  </pageContainer>
+</template>
+<script>
+import pageContainer from "../../components/template";
+import { sizeList,url } from "assets/js/sizeList";
+export default {
+  FesHeader: true,
+  FesLeft: false,
+  FesReady: function () {
+   // this.getSource()
+   this.filterCluster('Hadoop');
+  },
+  components: {
+    pageContainer,
+  },
+  data() {
+    return {
+      projectList: [],
+       projectColumn: [],
+      clusterList: [],
+      tableList: [],
+      dbList: [],
+      slectedCluster: "Hadoop",
+      dbName: "",
+      tableName: "",
+      typeData: "",
+      showLoading: false,
+      filterTableName: "",
+      pagination: {
+        page: 1,
+        size: 10,
+        total: 0,
+      },
+      sizeList,
+      url,
+      treeData: [
+         {
+            name: "Hadoop",
+            type:1,
+            children: [],
+            expand:false
+        }
+      ],
+    };
+  },
+  computed: {},
+  methods: {
+    //获取数据源
+    getSource() {
+        
+      this.FesApi.fetch("/api/v1/projector/meta_data/cluster", {}, "post")
+        .then((res) => {
+          if (res.optional_clusters && res.optional_clusters.length > 0) {
+            this.clusterList = res.optional_clusters.map((item) => {
+              return {
+                name: item,
+                children: [],
+                type: 1,
+              };
+            });
+
+            this.treeData = [
+                {
+                    name: "Hadoop",
+                    type: 0,
+                    children: [],
+                    expand:false
+                }
+            ]
+          } 
+        })
+        .finally(() => {});
+    },
+
+    //改变数据源
+    filterCluster(val) {
+      this.dbName = "";
+      this.tableName = "";
+      let params = {
+        source_type: "",
+        cluster_name: val,
+        start_index: 0,
+        page_size: 50000,
+      };
+      this.FesApi.fetch("api/v1/projector/meta_data/db", params, "post")
+        .then((res) => {
+        //   console.log(res);
+          if (res.data && res.data.length > 0) {
+            this.dbList = res.data.map((item) => {
+              return {
+                name: item.db_name,
+                children: [],
+                type: 2,
+              };
+            });
+            this.treeData =[
+                {
+                    name: "Hadoop",
+                    type:1,
+                    children:this.dbList,
+                    expand:true
+                }
+            ]
+          } else {
+            //callback();
+          }
+        })
+        .finally(() => {});
+    },
+    //改变库名
+    filterDb(val, callback) {
+      this.tableName = "";
+      if (val != "") {
+        let params = {
+          cluster_name: this.slectedCluster,
+          db_name: val,
+          start_index: 0,
+          page_size: 50000,
+        };
+          this.dbName = val;
+        this.FesApi.fetch("api/v1/projector/meta_data/table", params, "post")
+          .then((res) => {
+            //console.log(res)
+            
+            if (res.data && res.data.length > 0) {
+              this.tableList = res.data.map((item) => {
+                return {
+                  name: item.table_name,
+                  type: 3,
+                };
+              });
+               this.tableName = this.tableList[0].name;
+               this.search();
+ 
+              callback(this.tableList);
+            } else {
+              callback();
+            }
+          })
+          .finally(() => {});
+      }
+    },
+    //确定
+    search() {
+       
+        let that = this;
+          let http = new XMLHttpRequest();
+        // http.open("get", this.url+`/dataImportHive/getHiveContentV3?tableName=${this.tableName}&hiveDBName=${this.dbName}&page=${this.pagination.page}&size=${this.pagination.size}`, true)
+         http.open("get", this.url+`/dataImportHive/getHiveContentV3?tableName=${this.tableName}&hiveDBName=${this.dbName}`, true)
+        http.setRequestHeader("Content-Type", "application/json; charset=UTF-8");
+        http.send({})
+        that.showLoading = true;
+        that.$Toast('正在请求数据中,请不要重复操作', {
+                align: 'top',
+        })
+        http.onload = function () {
+           let res= JSON.parse(http.response);
+          // console.log(res)
+           if(res.code ===200){
+                that.projectColumn = res.columnList;
+                that.projectList = res.data;
+                that.pagination.total =  res.count;
+                  that.showLoading = false;
+           }
+          
+
+        }
+  
+    },
+    //异步加载属性数据
+    loadData(item, callback) {
+      if (item.type === 0) {
+        // this.getSource(callback);
+      } else if (item.type === 1) {
+        //this.slectedCluster = item.name;
+       // this.filterCluster(item.name, callback);
+      } else if (item.type === 2) {
+        this.dbName = item.name;
+        this.filterDb(item.name, callback);
+      } else if (item.type === 3) {
+        this.tableName = item.name;
+        this.search();
+        callback();
+      }
+    },
+
+    changePage({ current, size }) {
+      this.pagination.page = current;
+      this.pagination.size = size;
+      this.search();
+    },
+    //点击节点
+    selectNode(node) {
+        if(node !=null){
+            if (node.type && node.type === 3) {
+                this.tableName = node.name;
+                this.search();
+            }else if(node.type && node.type === 2) {
+                this.dbName = node.name;
+            }
+          
+        }
+    },
+  },
+};
+</script>
+<style scoped>
+.labelItem {
+  height: 60px;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  font-size: 14px;
+}
+.ruleDetList .ui-modal-dialog .ui-modal-body {
+  width: 1200px !important;
+}
+
+.ruleDetList td {
+  white-space: pre;
+}
+
+.mydatatable .label {
+  display: inline-block;
+  text-align: right;
+  padding-right: 8px;
+  height: 30px;
+  min-width: 140px;
+  line-height: 30px;
+  font-size: 14px;
+}
+.operate {
+  margin: 20px 20px 0px;
+}
+.flex-end {
+  display: flex;
+  justify-content: flex-end;
+}
+
+</style>

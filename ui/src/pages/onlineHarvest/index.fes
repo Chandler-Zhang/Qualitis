@@ -1,0 +1,188 @@
+<!--
+ * @Author: youdedong
+ * @Date: 2022-01-28 14:35:02
+ * @LastEditors: Please set LastEditors
+ * @LastEditTime: 2022-02-15 20:16:01
+ * @Description: 
+-->
+<template>
+  <pageContainer>
+    <div class="all-wrapper">
+      <Row class="operate">
+        <div class="breadcrumb-container mb10">
+          <span class="breadcrumb-item-link">{{$t('onlineData.OnlineHarvesting')}}</span>
+        </div>
+        <Wb-button type="primary" @click="handleAdd">{{$t('onlineData.AddTo')}}</Wb-button>
+      </Row>
+      <Row>
+        <Cell span="24" class="p20">
+          <Wb-table :data="allTable" border>
+            <Column prop="dataName" :name="$t('onlineData.AccessName')" />
+            <Column prop="sourceType" :name="$t('onlineData.dataSources')" />
+            <Column prop="createTime" :name="$t('onlineData.CreationTime')" />
+            <Column prop="tableName" :name="$t('onlineData.TargetDataSheet')" width="30%"/>
+            <Column :name="$t('onlineData.operation')" :action="action" />
+          </Wb-table>
+          <Pagination class="pt20" :size-list="sizeList" :current="pagination.page" :size="pagination.size"
+            :total="pagination.total" @on-change="changePage" />
+        </Cell>
+      </Row>
+      <Loading v-show="showLoading" class="loading-layout" />
+    </div>
+  </pageContainer>
+</template>
+<script>
+import pageContainer from '../../components/template';
+import { sizeList ,url} from 'assets/js/sizeList';
+export default {
+  FesHeader: true,
+  FesLeft: false,
+  FesReady: function () {
+    this.getAllData()
+  },
+  components: {
+    pageContainer
+  },
+  data() {
+    return {
+      typeData: "",
+      showLoading: true,
+      filterTableName: '',
+      pagination: {
+        page: 1,
+        size: 10,
+        total: 0
+      },
+      sizeList,
+      url,
+      allTable: [],
+      action: [
+        {
+          text: this.$t('onlineData.implement'),
+          func: this.implement,
+        },
+        {
+          text: this.$t('onlineData.journal'),
+          func: this.journal,
+        },
+      ],
+    }
+  },
+  computed: {
+  },
+  methods: {
+    //日志
+    journal(val) {
+      let _this = this
+      window.localStorage.setItem("journalId", val.id)
+      _this.FesApp.router.push("/onlineHarvest/journal")
+    },
+    //执行
+    implement(data) {
+      let _this = this
+      _this.showLoading = true
+      let subparams = {
+        dataImportTaskId: data.id,
+        saveMode: 'overwrite',
+        type: 'jdbc',
+      }
+      let subhttp = new XMLHttpRequest()
+      subhttp.open("post", this.url+"/data-import/trigger", true)
+      subhttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded;charset=UTF-8");
+      subhttp.send(`dataImportTaskId=${subparams.dataImportTaskId}&saveMode=${subparams.saveMode}&type=${subparams.type}`)
+      subhttp.onload = function () {
+        if (JSON.parse(subhttp.response).code == 200) {
+          _this.$Toast.success(_this.$t('onlineData.SuccessfulExecution'))
+          _this.showLoading = false
+
+        } else {
+          _this.$Toast.error(_this.$t('onlineData.ExecutionFailed'))
+          _this.showLoading = false
+        }
+      }
+
+
+      //   this.FesApi.fetch('data-import/trigger', subparams, 'post').then((res) => {
+
+      // })
+    },
+
+    getAllData() {
+      let _this = this
+      let subparams = {
+        dataImportTaskName: '',
+        endDate: '',
+        runningStatus: '',
+        sourceType: '',
+        startDate: '',
+        type: '',
+        page: this.pagination.page,
+        limit: this.pagination.size,
+      }
+      this.showLoading = true
+      let http = new XMLHttpRequest()
+      http.open("post", this.url+"/data-import/dataManage_list_search", true)
+      http.setRequestHeader("Content-Type", "application/json; charset=UTF-8");
+      http.send(JSON.stringify(subparams))
+      http.onload = function () {
+        _this.allTable = JSON.parse(http.response).data.data
+        let allnum = JSON.parse(http.response).data.count
+        _this.pagination.total = Math.ceil(Number(allnum) / _this.pagination.size)
+        _this.showLoading = false;
+
+      }
+    },
+
+
+    /**
+     * @Author: youdedong
+     * @description: 
+     * @Date: 2022-02-09 16:30:03
+     */
+    handleAdd() {
+      this.FesApp.router.push("/onlineHarvest/onlineHarvestCreate")
+    },
+    changePage({ current, size }) {
+      this.pagination.page = current;
+      this.pagination.size = size;
+
+      console.log(current, size)
+      this.getAllData();
+    },
+  }
+}
+
+</script>
+<style scoped>
+.labelItem {
+  height: 60px;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  font-size: 14px;
+}
+.ruleDetList .ui-modal-dialog .ui-modal-body {
+  width: 1200px !important;
+}
+
+.ruleDetList td {
+  white-space: pre;
+}
+
+.mydatatable .label {
+  display: inline-block;
+  text-align: right;
+  padding-right: 8px;
+  height: 30px;
+  min-width: 140px;
+  line-height: 30px;
+  font-size: 14px;
+}
+.operate {
+  margin: 20px 20px 0px;
+}
+.flex-end {
+  display: flex;
+  justify-content: flex-end;
+}
+</style>

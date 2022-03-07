@@ -1,0 +1,267 @@
+<!--
+ * @Author: youdedong
+ * @Date: 2022-02-10 10:01:40
+ * @Description: dataSourceCreate
+-->
+<template>
+    <pageContainer>
+        <div class="all-wrapper">
+            <Row class="operate">
+                <div class="breadcrumb-container mb10">
+                    <span class="breadcrumb">数据治理</span>
+                    <span class="breadcrumb-item-separator">/</span>
+                    <span class="breadcrumb" @click="handleRouter('/onlineHarvest')">在线收割</span>
+                    <span class="breadcrumb-item-separator">/</span>
+                    <span class="breadcrumb-item-link" @click="handleRouter('/onlineHarvest/onlineHarvestCreate')">新建在线收割</span>
+                    <span class="breadcrumb-item-separator">/</span>
+                    <span class="breadcrumb-item-link">创建数据源</span>
+                </div>
+      
+            </Row>
+            <Row class="operate">
+                <Panel title="基础参数配置">
+                  <Wb-button icon="md-arrow-round-back" slot="action"></Wb-button>
+                  <Wb-form label-position="left" :label-width="100">
+                       <Row>
+                        <Cell span="10">
+                            <Form-item label="数据源名称">
+                                <wb-input placeholder="请输入" v-model="params.name"></wb-input>
+                            </Form-item>
+                        </Cell>
+                        <Cell span="10" style="margin-left:40px">
+                                 <Form-item label="数据源类型">
+                                  <wb-select @on-change="changeType"  v-model="params.type">
+                                      <wb-option value="jdbc">jdbc</wb-option>
+                                      <wb-option value="neo4j">neo4j</wb-option>
+                                      <wb-option value="ftp">ftp</wb-option>
+                                      <wb-option value="hive">hive</wb-option>
+                                  </wb-select>
+                              </Form-item>
+                        </Cell>
+                      </Row>
+                       <Row v-if="params.type == 'ftp'">
+                        <Cell span="10" >
+                                 <Form-item label="协议">
+                                  <wb-select v-model="params.protocolList">
+                                      <wb-option value="ftp">ftp</wb-option>
+                                      <wb-option value="sftp">sftp</wb-option>
+                               
+                                  </wb-select>
+                              </Form-item>
+                        </Cell>
+                      </Row>
+                  </Wb-form>
+              </Panel>
+            </Row>
+            <Row class="operate">
+                <Panel title="params参数配置">
+                  <Wb-button icon="md-arrow-round-back" slot="action"></Wb-button>
+                  <Wb-form label-position="left" :label-width="100">
+                       <Row>
+                        <Cell span="24">
+                           <Wb-table :data="tabledata">
+                              <Column width="50%" prop="key" name="key"></Column>
+                              <Column  width="50%" prop="value" :editable="editNameConfig" name="value"> </Column>
+                          </Wb-table>
+                        </Cell>
+                      </Row>
+                  </Wb-form>
+              </Panel>
+            </Row>
+            <Row class="operate">
+                <Cell span="24" style="display:flex;justify-content:center">
+                  <Wb-button type="primary" @click="handleestablish">创建</Wb-button>
+                  <Wb-button type="primary" style="margin-left:30px" @click="handleReset">重置</Wb-button>
+                </Cell>
+            </Row>
+            <Loading v-show="showLoading" class="loading-layout" />
+        </div>
+    </pageContainer>
+</template>
+<script>
+    import pageContainer from '../../../components/template';
+    import { sizeList } from 'assets/js/sizeList';
+    export default {
+        FesHeader: true,
+        FesLeft: false,
+        FesReady: function () {
+
+        },
+        components: {
+            pageContainer
+        },
+        data() {
+            return {
+              tabledata:[],
+              params:{
+                name:'',
+                type:'',
+                protocolList:'',
+              },
+              editNameConfig:{
+                change: ( oldValue,newValue,col,trData ) => {
+                  console.log(oldValue,newValue,col,trData)
+                  //  this.$set(trData,'name',newValue)
+                  trData.value = newValue
+                },
+              },
+            }
+        },
+        computed: {
+ 
+        },
+        methods: {
+            /**
+             * @Author: youdedong
+             * @description: 
+             * @Date: 2022-02-09 16:44:16
+             */          
+            handleRouter(val){
+              this.FesApp.router.push(val)
+            },
+        /**
+         * @Author: youdedong
+         * @description: 
+         * @Date: 2022-02-10 10:45:28
+         */            
+          changeType(val){
+            console.log(this.params)
+            if(val == 'jdbc'){
+              this.tabledata = [
+                {
+                  key:"driverClassName",
+                  value:"",
+                },
+                {
+                  key:"jdbcUrl",
+                  value:"",
+                },
+                {
+                  key:"username",
+                  value:"",
+                },
+                {
+                  key:"password",
+                  value:"",
+                },
+              ]
+            }
+            else if(val == 'neo4j'){
+              this.tabledata = [
+                {
+                  key:"jdbcUrl",
+                  value:"",
+                },
+                {
+                  key:"username",
+                  value:"",
+                },
+                {
+                  key:"password",
+                  value:"",
+                },
+              ]
+            }
+            else if(val == 'ftp'){
+              this.tabledata = [
+                {
+                  key:"username",
+                  value:"",
+                },
+                {
+                  key:"password",
+                  value:"",
+                },
+                {
+                  key:"host",
+                  value:"",
+                },
+                {
+                  key:"port",
+                  value:"",
+                },
+              ]
+            }
+            else if(val == 'hive'){
+              this.tabledata = [
+                {
+                  key:"jdbcUrl",
+                  value:"",
+                },
+                {
+                  key:"hdfsUrl",
+                  value:"",
+                },
+                {
+                  key:"username",
+                  value:"",
+                },
+                {
+                  key:"password",
+                  value:"",
+                },
+              ]
+            }
+          },
+
+        /**
+         * @Author: youdedong
+         * @description: 重置
+         * @Date: 2022-02-10 11:23:37
+         */    
+          handleReset(){
+            this.tabledata = []
+            this.params ={
+                name:'',
+                type:'',
+                protocolList:'',
+              }
+          },  
+
+        /**
+         * @Author: youdedong
+         * @description: 创建
+         * @Date: 2022-02-10 14:24:33
+         */          
+        handleestablish(){
+          console.log(this.params)
+          console.log(this.tabledata)
+        },
+        }
+    }
+
+</script>
+<style scoped>
+    .labelItem {
+        height: 60px;
+        display: flex;
+        justify-content: flex-start;
+        align-items: center;
+        font-size: 14px;
+    }
+    .ruleDetList .ui-modal-dialog .ui-modal-body {
+        width: 1200px !important;
+    }
+
+    .ruleDetList td {
+        white-space: pre;
+    }
+
+    .mydatatable .label {
+        display: inline-block;
+        text-align: right;
+        padding-right: 8px;
+        height: 30px;
+        min-width: 140px;
+        line-height: 30px;
+        font-size: 14px;
+    }
+    .operate {
+        margin: 20px 20px 0px;
+    }
+    .flex-end {
+        display: flex;
+        justify-content: flex-end;
+    }
+</style>
+

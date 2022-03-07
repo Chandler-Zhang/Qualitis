@@ -1,87 +1,55 @@
 <template>
     <pageContainer>
-        <Row class="p20">
-            <Cell span="20" offset="2" class="p20 list-status">
-                <div class="task p20">
-                    {{ $t('dashboard.todayPass') }}/{{ $t('dashboard.todayFail') }}/{{ $t('common.failCheck') }}
-                    <span class="green pl20">
-                        {{ todayTask.application_succ_num || 0 }}
-                    </span>/<span class="red">
-                        {{ todayTask.application_fail_num || 0 }}
-                    </span>/<span class="blue">
-                        {{ todayTask.application_fail_check_num || 0 }}
-                    </span>
-                </div>
-                <AlarmsList :list="todayTask.applications" />
-                <Pagination :current="taskPageInfo.page" :size="taskPageInfo.size" :total="taskPageInfo.total" class="pl20 pr20"
-                    @on-change="changeTaskPage" />
-            </Cell>
-
-            <Cell span="20" offset="2" class="chart-cbox">
-                <div class="task-content">
-                    <div class="flex">
-                        <WbInputDatePicker v-model="taskRange.range" model="range" class="datepicker" @on-change="changeTaskRange" />
-                        <p class="rangeBtn">
-                            <a :class="{'current': taskRange.step_size==7}" @click="changeDateRange('taskChartData',7)">
-                                {{ $t('dashboard.last7Days') }}
-                            </a>
-                        </p>
-                        <p class="rangeBtn">
-                            <a :class="{'current': taskRange.step_size==30}" @click="changeDateRange('taskChartData',30)">
-                                {{ $t('dashboard.last30Days') }}
-                            </a>
-                        </p>
+         <div class="module">
+             <h3>快捷入口</h3>
+             <div class="flex-center">
+                 <div class="flex-center short" @click="handleRouter('/onlineHarvest/onlineHarvestCreate')">新导入数据</div>
+                 <div class="flex-center short" @click="handleRouter('/myProject/projects')">创建新项目</div>
+                 <div class="flex-center short" @click="handleRouter('/taskQuery')">查看所有任务</div>
+             </div>
+          </div>
+          <div class="module">
+             <h3>统计信息</h3>
+              <Row class="p20">
+                <Cell span="20" offset="2" class="p20 list-status">
+                    <div class="task p20">
+                        {{ $t('dashboard.todayPass') }}/{{ $t('dashboard.todayFail') }}/{{ $t('common.failCheck') }}
+                        <span class="green pl20">
+                            {{ todayTask.application_succ_num || 0 }}
+                        </span>/<span class="red">
+                            {{ todayTask.application_fail_num || 0 }}
+                        </span>/<span class="blue">
+                            {{ todayTask.application_fail_check_num || 0 }}
+                        </span>
                     </div>
-                    <LineChart :chartdata="taskChartData.chartdata" :options="taskChartData.options" class="mt20" />
-                </div>
-            </Cell>
-        </Row>
+                    <AlarmsList :list="todayTask.applications" />
+                    <Pagination :current="taskPageInfo.page" :size="taskPageInfo.size" :total="taskPageInfo.total" class="pl20 pr20"
+                        @on-change="changeTaskPage" />
+                </Cell>
+
+                <Cell span="20" offset="2" class="chart-cbox">
+                    <div class="task-content">
+                        <div class="flex">
+                            <WbInputDatePicker v-model="taskRange.range" model="range" class="datepicker" @on-change="changeTaskRange" />
+                            <p class="rangeBtn">
+                                <a :class="{'current': taskRange.step_size==7}" @click="changeDateRange('taskChartData',7)">
+                                    {{ $t('dashboard.last7Days') }}
+                                </a>
+                            </p>
+                            <p class="rangeBtn">
+                                <a :class="{'current': taskRange.step_size==30}" @click="changeDateRange('taskChartData',30)">
+                                    {{ $t('dashboard.last30Days') }}
+                                </a>
+                            </p>
+                        </div>
+                        <LineChart :chartdata="taskChartData.chartdata" :options="taskChartData.options" class="mt20" />
+                    </div>
+                </Cell>
+            </Row>
+          </div>
+       
     </pageContainer>
 </template>
-<style>
-    canvas {
-        border-radius: 5px;
-        box-shadow: 0px 2px 15px rgba(25, 25, 25, 0.27);
-        margin:  25px 0;
-    }
-</style>
-<style scoped>
-    .alarm-day, .list-status {
-        padding-left: 0
-    }
-    .status,.task {
-        text-align: center;
-        font-size: 1.6rem;
-    }
-    .datepicker {
-        flex: 6
-    }
-    .rangeBtn {
-        height: 32px;
-        line-height: 32px;
-        flex: 1;
-        padding-left: 20px;
-    }
-    .current {
-        color: #333;
-    }
-    .red {
-        color: #f00;
-    }
-    .green {
-        color: green;
-    }
-    .blue {
-        color: blue;
-    }
-    .chart-cbox {
-        margin-top: 20px;
-    }
-    .task-content {
-        margin-right: 30px;
-    }
-</style>
-
 <script type="text/ecmascript-6">
     import Vue from "vue";
     import { dateFormat } from "assets/js/utils.js";
@@ -328,6 +296,72 @@
                 });
                 this.loadTaskTodayData();
             },
+            //快捷入口
+            handleRouter(path){
+                if(path === '/myProject/projects'){
+                      this.$router.push({
+                        path,
+                        query:{
+                            add:true
+                        }
+                      })
+                    return ;
+                }
+                this.$router.push(path);
+            }
         }
     }
 </script>
+<style>
+    
+    canvas {
+        border-radius: 5px;
+        box-shadow: 0px 2px 15px rgba(25, 25, 25, 0.27);
+        margin:  25px 0;
+    }
+    
+</style>
+<style scoped>
+
+    .alarm-day, .list-status {
+        padding-left: 0
+    }
+    .status,.task {
+        text-align: center;
+        font-size: 1.6rem;
+    }
+    .datepicker {
+        flex: 6
+    }
+    .rangeBtn {
+        height: 32px;
+        line-height: 32px;
+        flex: 1;
+        padding-left: 20px;
+    }
+    .current {
+        color: #333;
+    }
+    .red {
+        color: #f00;
+    }
+    .green {
+        color: green;
+    }
+    .blue {
+        color: blue;
+    }
+    .chart-cbox {
+        margin-top: 20px;
+    }
+    .task-content {
+        margin-right: 30px;
+    }
+   
+
+
+   
+
+
+</style>
+
