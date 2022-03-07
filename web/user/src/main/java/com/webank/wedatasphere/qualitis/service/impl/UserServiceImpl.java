@@ -133,6 +133,33 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional(rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
+    public GeneralResponse<?> deleteUserRole_new(UserRequest request) throws UnExpectedRequestException {
+
+        // Check existence of user by id
+        Long userId = request.getUserId();
+        User userInDb = userDao.findById(userId);
+        if (userInDb == null) {
+            throw new UnExpectedRequestException("user id {&DOES_NOT_EXIST}, request: " + request);
+        }
+
+        //Check existence of user role 去删除用户角色
+        //查询用户角色，如果用户角色存在去删除
+        List<UserRole> byUser = userRoleDao.findByUser(userInDb);
+        UserRole userRoleInDb = userRoleDao.findByUuid(byUser.get(0).getId());
+        if (userRoleInDb == null) {
+            throw new UnExpectedRequestException("user role id {&DOES_NOT_EXIST}, request: " + request);
+        }
+        userRoleDao.deleteUserRole(userRoleInDb);
+        String uuid = userRoleInDb.getId();
+        System.out.println("userRole表--被删除的数据ID是：" + uuid);
+
+        // Delete user role
+        LOGGER.info("Succeed to delete user_role. uuid: {}, current_user: {}", uuid, HttpUtils.getUserName(httpServletRequest));
+        return new GeneralResponse<>("200", "{&DELETE_USER_ROLE_SUCCESSFULLY}", null);
+    }
+
+    @Override
+    @Transactional(rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
     public GeneralResponse<String> initPassword(UserRequest request) throws UnExpectedRequestException {
         // Check Arguments
         checkRequest(request);

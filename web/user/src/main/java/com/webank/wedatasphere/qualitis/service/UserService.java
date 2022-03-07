@@ -59,6 +59,14 @@ public interface UserService {
     GeneralResponse<?> deleteUser(UserRequest request) throws UnExpectedRequestException;
 
     /**
+     * DeleteUserRole
+     * @param request
+     * @return
+     * @throws UnExpectedRequestException
+     */
+    GeneralResponse<?> deleteUserRole_new(UserRequest request) throws UnExpectedRequestException;
+
+    /**
      * Initial password of user
      * @param request
      * @return

@@ -75,6 +75,10 @@ public class UserController {
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
     public GeneralResponse<?> deleteUser(UserRequest request, @Context HttpServletRequest httpServletRequest) throws UnExpectedRequestException {
+
+        //Check existence of user role 删除用户角色
+        userService.deleteUserRole_new(request);
+
         String username = null;
         try {
             username = HttpUtils.getUserName(httpServletRequest);
